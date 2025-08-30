@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Flask AI-Lite: Typing Analyzer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Poppins', sans-serif; }
+        textarea::-webkit-scrollbar { width: 8px; }
+        textarea::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        textarea::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        textarea::-webkit-scrollbar-thumb:hover { background: #a0aec0; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen flex flex-col items-center py-12 px-4 sm:px-6 lg:px-8">
+
+    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-4xl border border-gray-200">
+
+        <header class="text-center mb-10">
+            <h1 class="text-4xl font-extrabold text-gray-800 mb-3">Flask AI-Lite: Subconscious Typing Analyzer</h1>
+            <p class="text-lg text-gray-600">Uncover insights about your focus, stress, and confidence through typing patterns.</p>
+        </header>
+
+        <!-- Typing Section -->
+        <section class="mb-10">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">1. Start Typing Your Story</h2>
+            <textarea id="typing-area" class="w-full p-4 border border-gray-300 rounded-lg text-lg focus:outline-none focus:ring-4 focus:ring-blue-200 transition duration-300 ease-in-out resize-y min-h-[200px] shadow-sm" placeholder="Type a short paragraph here to analyze your typing patterns..."></textarea>
+            <button id="analyze-button" class="mt-6 w-full bg-blue-600 text-white py-3 px-6 rounded-lg text-xl font-semibold hover:bg-blue-700 transition duration-300 ease-in-out shadow-md focus:outline-none focus:ring-4 focus:ring-blue-300">
+                Analyze My Typing Pattern
+            </button>
+        </section>
+
+        <!-- Results Section -->
+        <section id="results-section" class="mt-12 hidden">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-6">2. Your Typing Mood Report</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-blue-50 p-6 rounded-lg border border-blue-200 shadow-md flex flex-col justify-between">
+                    <h3 class="text-xl font-bold text-blue-800 mb-3">Overall Mood & Insights</h3>
+                    <p id="mood-report" class="text-blue-700 text-lg leading-relaxed flex-grow"></p>
+                    <div id="typing-challenge" class="mt-4 p-3 bg-blue-100 border border-blue-300 rounded-md text-blue-800 hidden">
+                        <span class="font-semibold">Daily Challenge:</span> <span id="challenge-text"></span>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 p-6 rounded-lg border border-gray-200 shadow-md h-64">
+                    <h3 class="text-xl font-bold text-gray-800 mb-3">Typing Metrics Over Time</h3>
+                    <canvas id="typingChart" class="w-full h-full"></canvas>
+                </div>
+            </div>
+
+            <div class="mt-8 bg-gray-50 p-6 rounded-lg border border-gray-200 shadow-md">
+                <h3 class="text-xl font-bold text-gray-800 mb-3">Key Metrics</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-center">
+                    <div class="p-4 bg-white rounded-md shadow-sm border border-gray-100">
+                        <p class="text-sm text-gray-500">Avg. Keystroke Speed (WPM)</p>
+                        <p id="avg-speed" class="text-2xl font-bold text-blue-600">--</p>
+                    </div>
+                    <div class="p-4 bg-white rounded-md shadow-sm border border-gray-100">
+                        <p class="text-sm text-gray-500">Total Pauses</p>
+                        <p id="total-pauses" class="text-2xl font-bold text-blue-600">--</p>
+                    </div>
+                    <div class="p-4 bg-white rounded-md shadow-sm border border-gray-100">
+                        <p class="text-sm text-gray-500">Backspaces</p>
+                        <p id="total-backspaces" class="text-2xl font-bold text-blue-600">--</p>
+                    </div>
+                    <div class="p-4 bg-white rounded-md shadow-sm border border-gray-100">
+                        <p class="text-sm text-gray-500">Burst %</p>
+                        <p id="burst-percentage" class="text-2xl font-bold text-blue-600">--</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- History Section -->
+        <section id="history-section" class="mt-12">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-6 flex justify-between items-center">
+                3. Your Typing History
+                <button id="export-csv-button" class="bg-green-600 text-white py-2 px-4 rounded-lg text-base hover:bg-green-700 transition duration-300 ease-in-out shadow-sm focus:outline-none focus:ring-2 focus:ring-green-300">
+                    Export to CSV
+                </button>
+            </h2>
+            <div class="bg-white p-6 rounded-lg border border-gray-200 shadow-md overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mood</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Speed (WPM)</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pauses</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Backspaces</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Words</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-table-body" class="bg-white divide-y divide-gray-200">
+                        <tr>
+                            <td colspan="6" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">No history yet. Start typing above!</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <!-- Script -->
+    <script>
+        const typingArea = document.getElementById('typing-area');
+        const analyzeButton = document.getElementById('analyze-button');
+        const resultsSection = document.getElementById('results-section');
+        const moodReportElem = document.getElementById('mood-report');
+        const avgSpeedElem = document.getElementById('avg-speed');
+        const totalPausesElem = document.getElementById('total-pauses');
+        const totalBackspacesElem = document.getElementById('total-backspaces');
+        const burstPercentageElem = document.getElementById('burst-percentage');
+        const typingChallengeElem = document.getElementById('typing-challenge');
+        const challengeTextElem = document.getElementById('challenge-text');
+        const historyTableBody = document.getElementById('history-table-body');
+        const exportCsvButton = document.getElementById('export-csv-button');
+
+        let keydownEvents = [];
+        let keyupEvents = [];
+        let typingChartInstance = null;
+
+        typingArea.addEventListener('keydown', (e) => {
+            keydownEvents.push({ key: e.key, timestamp: Date.now() });
+        });
+        typingArea.addEventListener('keyup', (e) => {
+            keyupEvents.push({ key: e.key, timestamp: Date.now() });
+        });
+
+        analyzeButton.addEventListener('click', async () => {
+            const text = typingArea.value;
+            if (text.trim() === "") {
+                alert("Please type some text before analyzing!");
+                return;
+            }
+
+            const response = await fetch('/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text, keydownEvents, keyupEvents })
+            });
+            const data = await response.json();
+
+            // Update mood & metrics
+            moodReportElem.innerHTML = data.moodReport;
+            avgSpeedElem.textContent = data.avgSpeed;
+            totalPausesElem.textContent = data.totalPauses;
+            totalBackspacesElem.textContent = data.totalBackspaces;
+            burstPercentageElem.textContent = data.burstPercentage;
+
+            // Daily challenge
+            if (data.challenge) {
+                challengeTextElem.textContent = data.challenge;
+                typingChallengeElem.classList.remove('hidden');
+            } else {
+                typingChallengeElem.classList.add('hidden');
+            }
+
+            resultsSection.classList.remove('hidden');
+            renderChart(data.chartData);
+
+            // Refresh history table from /history endpoint
+            await fetchHistory();
+
+            typingArea.value = '';
+            typingArea.blur();   // prevent scroll jump
+            keydownEvents = [];
+            keyupEvents = [];
+        });
+
+        // Export CSV
+        exportCsvButton.addEventListener('click', () => {
+            window.location.href = '/export_csv';
+        });
+
+        // Fetch history from backend and populate table
+        async function fetchHistory() {
+            try {
+                const res = await fetch('/history');
+                const sessions = await res.json();
+
+                historyTableBody.innerHTML = '';
+
+                if (!sessions || sessions.length === 0) {
+                    historyTableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">No history yet. Start typing above!</td></tr>`;
+                    return;
+                }
+
+                sessions.forEach(sess => {
+                    const row = `
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${sess.date}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${sess.mood}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${sess.avg_speed}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${sess.total_pauses}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${sess.total_backspaces}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${sess.total_words}</td>
+                        </tr>
+                    `;
+                    historyTableBody.insertAdjacentHTML('beforeend', row);
+                });
+            } catch (err) {
+                console.error('Failed to load history', err);
+            }
+        }
+
+        // Render Chart
+        function renderChart(chartData) {
+            const ctx = document.getElementById('typingChart').getContext('2d');
+            if (typingChartInstance) typingChartInstance.destroy();
+
+            typingChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ["Speed (WPM)", "Pauses", "Backspaces", "Burst %"],
+                    datasets: [{
+                        label: "Typing Metrics",
+                        data: [
+                            chartData.avgSpeed || 0,
+                            chartData.totalPauses || 0,
+                            chartData.totalBackspaces || 0,
+                            chartData.burstPercentage || 0
+                        ],
+                        backgroundColor: [
+                            "rgba(59, 130, 246, 0.6)",
+                            "rgba(16, 185, 129, 0.6)",
+                            "rgba(239, 68, 68, 0.6)",
+                            "rgba(234, 179, 8, 0.6)"
+                        ],
+                        borderColor: [
+                            "rgba(59, 130, 246, 1)",
+                            "rgba(16, 185, 129, 1)",
+                            "rgba(239, 68, 68, 1)",
+                            "rgba(234, 179, 8, 1)"
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false },
+                        title: { display: true, text: "Typing Metrics Overview" }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        // On page load, fetch history so table isn't empty
+        document.addEventListener('DOMContentLoaded', fetchHistory);
+    </script>
+</body>
+</html>
